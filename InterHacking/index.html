@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>InterHacking</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Courier New', Courier, monospace;
+      background-color: #0e1323;
+      color: white;
+      text-align: center;
+    }
+
+    header {
+      background-color: #0a0f1d;
+      padding: 20px;
+      font-size: 24px;
+      text-align: left;
+      padding-left: 40px;
+      border-bottom: 2px solid #1f263b;
+    }
+
+    h1 {
+      font-size: 3em;
+      margin: 20px 0 10px;
+    }
+
+    p {
+      font-size: 1.2em;
+      margin-bottom: 30px;
+      color: #ccc;
+    }
+
+    #nameInput {
+      padding: 10px 15px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      margin-bottom: 30px;
+    }
+
+    .cards {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      flex-wrap: wrap;
+      padding: 20px;
+    }
+
+    .card {
+      background: #1b2138;
+      border-radius: 20px;
+      padding: 25px;
+      width: 250px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+      transition: transform 0.2s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+    }
+
+    .card h2 {
+      margin-top: 15px;
+      font-size: 1.5em;
+    }
+
+    .card p {
+      font-size: 1em;
+      color: #aaa;
+    }
+
+    .card button {
+      margin-top: 20px;
+      background-color: #98a19d;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 12px;
+      font-size: 1em;
+      font-weight: bold;
+      cursor: pointer;
+      color: #0e1323;
+    }
+
+    .card button:hover {
+      background-color: #00d47f;
+    }
+
+     #codeRain {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to top, #cceeff, #ffffff);
+    }
+  </style>
+</head>
+<body>
+<!-- Tetris rain background -->
+<canvas id="tetrisRain" style="position: fixed; top: 0; left: 0; z-index: -1;"></canvas>
+
+  <header>
+    <span style="color: #00ff95;">&gt;_</span> InterHacking<span style="color: #00ff95;">_</span>
+  </header>
+
+  <h1>Select Game Mode<span style="color: #00ff95;">_</span></h1>
+  <p>Choose your challenge and test your typing skills across different dimensions</p>
+
+  <input id="nameInput" type="text" placeholder="Enter your name..." />
+
+  <!-- Button for 3 different modes -->
+  <div class="cards">
+    <div class="card" style="background-color: #183d2c;">
+      <div style="font-size: 30px;">&gt;_</div>
+      <h2>Statement Hacking</h2>
+      <p>Test your coding speed! Type 5 statements as fast as you can before time runs out!</p>
+      <button onclick="startGame('statement.html')">Start Game</button>
+    </div>
+
+    <div class="card" style="background-color: #0b3c4f;">
+      <div style="font-size: 30px;">01<br>10</div>
+      <h2>Word Error</h2>
+      <p> Quickly type the wrong words correctly to fix the errors and clear the terminal.</p>
+      <button onclick="startGame('word.html')">Start Game</button>
+    </div>
+
+    <div class="card" style="background-color: #3a1954;">
+      <div style="font-size: 30px;">📟</div>
+      <h2>Charging Math</h2>
+      <p>Solve math problems charge up your magic battery! — but beware, wrong answers will drain your charge!</p>
+      <button onclick="startGame('math.html')">Start Game</button>
+    </div>
+  </div>
+
+  <script>
+  // Tetris rain effect
+  const canvas = document.getElementById("tetrisRain");
+  const ctx = canvas.getContext("2d");
+
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const blockSize = 20;
+  const columns = Math.floor(canvas.width / blockSize);
+  const rows = Math.floor(canvas.height / blockSize);
+
+  const blocks = [];
+
+  // Tetris-like colors
+  const colors = ["#FF595E", "#FFCA3A", "#8AC926", "#1982C4", "#6A4C93"];
+
+  class Block {
+    constructor(x, y, color) {
+      this.x = x;
+      this.y = y;
+      this.color = color;
+    }
+
+    fall() {
+      this.y += 1;
+      if (this.y * blockSize > canvas.height) {
+        this.y = 0;
+        this.x = Math.floor(Math.random() * columns);
+        this.color = colors[Math.floor(Math.random() * colors.length)];
+      }
+    }
+
+    draw() {
+      ctx.fillStyle = this.color;
+      ctx.fillRect(this.x * blockSize, this.y * blockSize, blockSize, blockSize);
+      ctx.strokeStyle = "#0e1323";
+      ctx.strokeRect(this.x * blockSize, this.y * blockSize, blockSize, blockSize);
+    }
+  }
+
+  // Initialize falling blocks
+  for (let i = 0; i < 80; i++) {
+    const x = Math.floor(Math.random() * columns);
+    const y = Math.floor(Math.random() * rows);
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    blocks.push(new Block(x, y, color));
+  }
+
+  function drawTetrisRain() {
+    ctx.fillStyle = "rgba(14, 19, 35, 0.25)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    for (const block of blocks) {
+      block.fall();
+      block.draw();
+    }
+
+    requestAnimationFrame(drawTetrisRain);
+  }
+
+  drawTetrisRain();
+
+  // Adjust canvas on resize
+  window.addEventListener("resize", () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  });
+
+
+    function startGame(file) {
+      const name = document.getElementById('nameInput').value.trim();
+      if (!name) {
+        alert("Please enter your name first!");
+        return;
+      }
+      window.location.href = `game/${file}?name=${encodeURIComponent(name)}`;
+    }
+  </script>
+</body>
+</html>

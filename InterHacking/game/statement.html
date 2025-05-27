@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Statement Hacking</title>
+  <style>
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      background: black;
+      color: #00ff00;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+      overflow-x: hidden;
+    }
+  .navbar {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 20px;
+      background: #111;
+      color: #0f0;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      align-items: center;
+    }
+      .navbar button {
+      background-color: #30ff59;
+      color: #0e1323;
+      font-weight: bold;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .navbar button:hover {
+      background-color: #3a3e3a;
+    }
+
+    .navbar span {
+      font-size: 20px;
+    }
+     #matrix {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: -1; /* Keep canvas in the background */
+      width: 100%;
+      height: 100%;
+      pointer-events: none; /* So clicks go through */
+    }
+    h1, h2, h3 {
+      color: #00ff00;
+      text-shadow: 0 0 5px #00ff00;
+    }
+    input, select, button {
+      background: #111;
+      color: #00ff00;
+      border: 1px solid #0f0;
+      border-radius: 5px;
+      padding: 10px;
+      font-size: 16px;
+    }
+        button {
+      background: none;
+      border: 1px solid #0f0;
+      color: #0f0;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-family: monospace;
+    }
+    button:hover {
+      background: #0f0;
+      color: black;
+    }
+    .road {
+      background: #222;
+      border: 2px solid #0f0;
+      height: 20px;
+      position: relative;
+      margin: 20px auto;
+      width: 80%;
+    }
+    .character {
+      background: #0f0;
+      width: 20px;
+      height: 20px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      transition: left 0.3s ease;
+    }
+    #sentence {
+      font-size: 24px;
+      margin-bottom: 15px;
+      user-select: none;
+      white-space: pre-wrap;
+    }
+    #sentence span.correct {
+      color: #00ff00;
+    }
+    #sentence span.incorrect {
+      color: #ff0000;
+      text-decoration: underline;
+    }
+    #sentence span.pending {
+      color: #00ff00;
+      opacity: 0.3;
+    }
+    .score-box {
+      background: #111;
+      border: 1px solid #0f0;
+      color: #0f0;
+      margin: 10px;
+      padding: 10px;
+      display: inline-block;
+    }
+    #result {
+    display:none; 
+  border: 2px solid #444; 
+  padding: 60px; 
+  max-width: 400px; 
+  margin: 20px auto; 
+  text-align: center; 
+  font-family: Arial, sans-serif;
+  background-color: rgba(255, 255, 255, 0.6);
+    }
+    #game {
+      display: none;
+    }
+    .score-section {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    a {
+      color: #00ff00;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    /* Warning animation */
+    #warning-container {
+      pointer-events: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: visible;
+      z-index: 1000;
+    }
+    .warning-fall {
+      position: absolute;
+      font-size: 24px;
+      animation: fall 3s linear forwards;
+      user-select: none;
+      color: #ff0;
+      text-shadow: 0 0 5px #ff0;
+    }
+    @keyframes fall {
+      0% { transform: translateY(-50px); opacity: 1; }
+      100% { transform: translateY(100vh); opacity: 0; }
+    }
+    /* Timer warning style */
+    #timer.warning-timer {
+      color: #ff0000;
+      font-weight: bold;
+      text-shadow: 0 0 8px #ff0000;
+    }
+    /* New sentence box style */
+    .sentence-box {
+      background-color: #1b2138; 
+      padding: 20px;
+      margin: 40px auto;
+      width: 60%;
+      border-radius: 15px;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+    }
+  </style>
+</head>
+<body>
+<!-- code error BACKGROUND EFFECT -->
+<canvas id="matrix"></canvas>
+
+<div class="navbar">
+    <button onclick="exitGame()"> Exit</button>
+    <span id="gameTitle"> Statement Hacking </span>
+    <button onclick="restartGame()"> Restart</button>
+  </div>
+
+<!-- Terminal game -->
+<div id="game">
+  <div class="sentence-box">
+    <p id="sentence"></p>
+    <input type="text" id="input" oninput="checkInput()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+</div>
+
+<!-- road to move character -->
+  <div class="road">
+    <div class="character" id="character"></div>
+  </div>
+  <p id="timer"></p>
+</div>
+
+<div id="result" >
+  <h2 id="resultTitle"></h2>
+  <p id="finalScore" style="color: #333333;"></p>
+  <p id="finalSpeed" style="color: #333333;"></p>
+  <p id="finalAccuracy" style="color: #333333;"></p>
+  <button onclick="location.reload()" style="background-color: #1b2138; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px;">
+  Play Again
+</button>
+
+</div>
+
+<div id="warning-container"></div>
+
+<script>
+// Get name from URL
+const urlParams = new URLSearchParams(window.location.search);
+const playerName = urlParams.get('name') || 'Player';
+
+// Update title to show player's name
+const gameTitle = document.getElementById('gameTitle');
+if (gameTitle) {
+  gameTitle.innerText += ` | Hello, ${playerName}!`;
+}
+
+// Sentences for different difficulty levels
+const sentences = {
+  easy: [
+    "Code is fun",
+    "I love JavaScript",
+    "HTML makes pages",
+    "CSS styles content",
+    "Debug errors fast"
+  ],
+  medium: [
+    "Functions help reuse code",
+    "Debugging improves skills",
+    "Loops repeat actions",
+    "Variables store values",
+    "Events trigger actions"
+  ],
+  hard: [
+    "Asynchronous code requires patience",
+    "Recursion solves nested problems",
+    "Closures maintain private state",
+    "Promises handle async flow",
+    "Modules organize codebase",
+    "Fast fingers win the race"
+  ]
+};
+
+const timeLimits = { easy: 60, medium: 45, hard: 30 };
+let selectedLevel = "easy"; // default level
+
+let sentenceList, currentSentence = "", displayedSentence = "";
+let sentenceIndex = 0, timeLeft, timer, startTime;
+let charElement, inputElement;
+
+let totalTyped = 0, correctTyped = 0;
+let completedSentences = 0;
+
+function startGame() {
+  selectedLevel = "easy";
+  sentenceList = sentences[selectedLevel];
+  sentenceIndex = 0;
+  totalTyped = 0;
+  correctTyped = 0;
+  completedSentences = 0;
+
+  document.getElementById('game').style.display = 'block';
+
+  charElement = document.getElementById('character');
+  inputElement = document.getElementById('input');
+  inputElement.value = '';
+  inputElement.focus();
+
+  timeLeft = timeLimits[selectedLevel];
+  startTime = Date.now();
+
+  updateSentence();
+  updateTimer();
+
+  if(timer) clearInterval(timer);
+  timer = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    timeLeft = timeLimits[selectedLevel] - elapsed;
+
+    if (timeLeft <= 0) {
+      endGame(false);
+      return;
+    }
+
+    updateTimer();
+
+    // Change difficulty dynamically every 20 seconds
+    if (elapsed < 20) {
+      if(selectedLevel !== "easy") {
+        selectedLevel = "easy";
+        sentenceList = sentences[selectedLevel];
+        updateSentence();
+        timeLeft = timeLimits[selectedLevel] - elapsed;
+      }
+    } else if (elapsed < 40) {
+      if(selectedLevel !== "medium") {
+        selectedLevel = "medium";
+        sentenceList = sentences[selectedLevel];
+        updateSentence();
+        timeLeft = timeLimits[selectedLevel] - elapsed;
+      }
+    } else {
+      if(selectedLevel !== "hard") {
+        selectedLevel = "hard";
+        sentenceList = sentences[selectedLevel];
+        updateSentence();
+        timeLeft = timeLimits[selectedLevel] - elapsed;
+      }
+    }
+  }, 200);
+}
+
+function updateTimer() {
+  const timerElem = document.getElementById('timer');
+  timerElem.innerText = `Time left: ${timeLeft}s`;
+  if (timeLeft <= 15) {
+    timerElem.classList.add('warning-timer');
+  } else {
+    timerElem.classList.remove('warning-timer');
+  }
+}
+
+function updateSentence() {
+  currentSentence = sentenceList[Math.floor(Math.random() * sentenceList.length)];
+  displayedSentence = makeOneWordIncomplete(currentSentence);
+  renderSentence(displayedSentence, "");
+  inputElement.value = '';
+  updateCharacterPosition(0);
+}
+
+// Function to make one word in the sentence incomplete
+function makeOneWordIncomplete(sentence) {
+  let words = sentence.split(" ");
+  let idx = Math.floor(Math.random() * words.length);
+  let word = words[idx];
+  if(word.length > 3) {
+    words[idx] = word.slice(0, word.length - 2) + "_".repeat(2);
+  } else {
+    words[idx] = word.slice(0, word.length - 1) + "_";
+  }
+  return words.join(" ");
+}
+
+// Render the sentence with underscores for incomplete words
+function renderSentence(sentenceWithUnderscore, userInput) {
+  const sentenceElem = document.getElementById('sentence');
+  sentenceElem.innerHTML = '';
+
+  for(let i = 0; i < sentenceWithUnderscore.length; i++) {
+    const span = document.createElement('span');
+    const correctChar = currentSentence[i] || '';
+    const displayedChar = sentenceWithUnderscore[i];
+    const userChar = userInput[i] || '';
+
+    if(userChar === '') {
+      span.className = 'pending';
+      span.textContent = displayedChar;
+    } else if(userChar === correctChar) {
+      span.className = 'correct';
+      span.textContent = userChar;
+    } else {
+      span.className = 'incorrect';
+      span.textContent = userChar;
+    }
+
+    sentenceElem.appendChild(span);
+  }
+}
+
+function checkInput() {
+  const userInput = inputElement.value;
+
+  // Render the sentence with user input
+  renderSentence(displayedSentence, userInput);
+
+  // Don't count every keystroke as totalTyped, only count when sentence is completed
+  if(userInput.length === currentSentence.length) {
+    totalTyped += currentSentence.length;
+
+    // Count correct chars only for the completed sentence
+    for(let i = 0; i < currentSentence.length; i++) {
+      if(userInput[i] === currentSentence[i]) {
+        correctTyped++;
+      }
+    }
+
+    // Check if sentence is completed correctly
+    if(userInput === currentSentence) {
+      completedSentences++;
+      if(completedSentences >= 5) {
+        endGame(true);
+        return;
+      }
+    }
+    updateSentence();
+  }
+
+  // Show warning if any char is wrong in current input
+  let anyWrongChar = false;
+  for(let i = 0; i < userInput.length; i++) {
+    if(userInput[i] !== currentSentence[i]) {
+      anyWrongChar = true;
+      break;
+    }
+  }
+  if(anyWrongChar) {
+    createWarningFall();
+  }
+
+  updateCharacterPosition(userInput.length);
+}
+
+function updateCharacterPosition(charsTyped) {
+  const roadWidth = document.querySelector('.road').clientWidth;
+  const charWidth = charElement.clientWidth;
+  const totalChars = currentSentence.length;
+
+  let pos = (charsTyped / totalChars) * (roadWidth - charWidth);
+  charElement.style.left = pos + 'px';
+}
+
+// Create falling warning effect
+function createWarningFall() {
+  const warningContainer = document.getElementById('warning-container');
+  const warning = document.createElement('div');
+  warning.classList.add('warning-fall');
+  warning.textContent = "⚠️";
+
+  const startX = Math.random() * (window.innerWidth - 30);
+  warning.style.left = startX + "px";
+
+  warningContainer.appendChild(warning);
+
+  warning.addEventListener('animationend', () => {
+    warning.remove();
+  });
+}
+
+// End the game and show results
+function endGame(success) {
+  clearInterval(timer);
+  document.getElementById('game').style.display = 'none';
+
+  const totalTime = (Date.now() - startTime) / 1000;
+  const wpm = Math.round((correctTyped / 5) / (totalTime / 60));
+  const accuracy = totalTyped === 0 ? 0 : Math.round((correctTyped / totalTyped) * 100);
+
+  // Show result container and message
+  const resultDiv = document.getElementById('result');
+  const title = document.getElementById('resultTitle');
+
+  if (completedSentences >= 5) {
+  title.textContent = "Your hacking is success!";
+  title.style.color = "green"; //  for success
+} else {
+  title.textContent = "Your computer is hacked!";
+  title.style.color = "red";  // make text red here
+}
+
+
+  document.getElementById('finalScore').textContent = `Completed sentences: ${completedSentences}`;
+  document.getElementById('finalSpeed').textContent = `Speed (WPM): ${wpm}`;
+  document.getElementById('finalAccuracy').textContent = `Accuracy: ${accuracy}%`;
+
+  resultDiv.style.display = 'block';
+}
+
+function exitGame() {
+  window.location.href = "../index.html";
+}
+
+function restartGame() {
+  location.reload();
+}
+
+
+// ERROR CODE MATRIX BACKGROUND EFFECT
+const canvas = document.getElementById('matrix');
+const ctx = canvas.getContext('2d');
+let width, height;
+
+function resize() {
+  width = window.innerWidth;
+  height = window.innerHeight;
+  canvas.width = width;
+  canvas.height = height;
+}
+window.addEventListener('resize', resize);
+resize();
+
+const letters = "アァイィウヴエオカキㄱㄷㅈㅂㅇㅅㄴㅊㅎㅈㅂㅌㅁㄴㄴツテムメモヤユヨラリルレロワヲンabcdefghijklmnopqrstuvwxyz0123456789";
+const fontSize = 18;
+const columns = Math.floor(width / fontSize);
+const drops = Array(columns).fill(1);
+
+// Hacker words
+const hackerWords = ["HACKED", "ACCESS", "BYTE", "GRANTED", "TRACE", "UPLOAD", "SYS", "NODE", "NULL"];
+let flashingWords = [];
+
+function drawMatrix() {
+  ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+  ctx.fillRect(0, 0, width, height);
+  ctx.font = fontSize + "px monospace";
+
+  for (let i = 0; i < drops.length; i++) {
+    const text = letters.charAt(Math.floor(Math.random() * letters.length));
+    const x = i * fontSize;
+    const y = drops[i] * fontSize;
+
+    // Random bright glitch effect
+    if (Math.random() > 0.98) {
+      ctx.fillStyle = "#ccffcc";
+    } else {
+      ctx.fillStyle = "#00ff00";
+    }
+
+    ctx.fillText(text, x, y);
+
+    if (y > height && Math.random() > 0.975) {
+      drops[i] = 0;
+    }
+    drops[i]++;
+  }
+
+  // Floating hacker words
+  drawFloatingWords();
+}
+
+function drawFloatingWords() {
+  if (Math.random() < 0.02) {
+    flashingWords.push({
+      text: hackerWords[Math.floor(Math.random() * hackerWords.length)],
+      x: Math.random() * width,
+      y: -20,
+      speed: 1 + Math.random() * 2,
+      opacity: 1
+    });
+  }
+
+  flashingWords.forEach((word, i) => {
+    ctx.font = "bold 24px monospace";
+    ctx.fillStyle = `rgba(0,255,0,${word.opacity})`;
+    ctx.fillText(word.text, word.x, word.y);
+    word.y += word.speed;
+    word.opacity -= 0.01;
+
+    if (word.opacity <= 0) flashingWords.splice(i, 1);
+  });
+}
+
+setInterval(drawMatrix, 35);
+
+ function exitGame() {
+      window.location.href = "../index.html";
+    }
+
+// Start game immediately on page load
+window.onload = () => {
+  startGame();
+};
+
+
+</script>
+
+</body>
+</html>

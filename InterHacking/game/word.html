@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TypeWalker - Coding Error Game</title>
+  <link rel="stylesheet" href="kitty.css">
+  <style>
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      margin: 0;
+      overflow: hidden;
+      background: #cceeff;
+    }
+
+    #codeRain {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to top, #cceeff, #ffffff);
+    }
+
+    .game {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+    }
+
+    .character {
+      position: absolute;
+      bottom: 200px;
+      left: 50px;
+      width: 90px;
+      height: 90px;
+    }
+    .game-title {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 26px;
+    font-weight: bold;
+    color: #333;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 5px 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 5px #888;
+    z-index: 5;
+    }
+
+
+    .obstacle {
+      position: absolute;
+      right: -220px;
+      min-width: 110px;
+      padding: 8px 14px 14px 14px;
+      background: rgba(255, 240, 240, 0.95);
+      border: 2px solid #d9534f;
+      border-radius: 7px;
+      color: #b83232;
+      font-weight: 700;
+      font-size: 20px;
+      white-space: nowrap;
+      user-select: none;
+      box-shadow: inset 0 2px 5px rgba(255, 255, 255, 0.8),
+                  0 3px 8px rgba(217, 83, 79, 0.8);
+    }
+
+    .obstacle::before {
+      content: "Error";
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #d9534f;
+      color: white;
+      font-size: 16px;
+      padding: 3px 10px;
+      border-top-left-radius: 5px;
+      border-top-right-radius: 5px;
+      margin: -8px -14px 8px -14px;
+      font-weight: 900;
+      user-select: none;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.3);
+    }
+
+    .obstacle::after {
+      content: "✕";
+      font-weight: 900;
+      color: white;
+      cursor: default;
+      margin-left: 10px;
+      user-select: none;
+    }
+
+    .score-box, .timer-box, .input-display {
+      position: absolute;
+      font-size: 20px;
+      font-weight: bold;
+      background: rgba(255,255,255,0.8);
+      padding: 5px 10px;
+      border-radius: 10px;
+    }
+
+    .score-box { top: 20px; left: 20px; }
+    .timer-box { top: 20px; left: 160px; }
+    .pause-btn {
+    position: absolute;
+    top: 20px;
+    right: 120px;
+    font-size: 18px;
+    font-weight: bold;
+    background: rgba(255,255,255,0.8);
+    padding: 5px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    z-index: 10;
+    transition: background 0.2s ease;
+    }
+    .pause-btn:hover {
+    background: #eee;
+    }
+
+    .exit-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 18px;
+    font-weight: bold;
+    background: rgba(255, 102, 102, 0.9);
+    color: white;
+    padding: 5px 12px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    z-index: 10;
+    transition: background 0.2s ease;
+    }
+    .exit-btn:hover {
+    background: #cc0000;
+    }
+
+    .input-display {
+    bottom: 140px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 18px;
+    padding: 10px 15px;
+    background: rgba(255,255,255,0.9);
+    border-radius: 8px;
+    min-width: 300px;
+    text-align: center;
+    color: #333;
+    border: 1px solid #aaa;
+    }
+
+    input {
+      position: absolute;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 10px;
+      font-size: 20px;
+      width: 320px;
+      font-family: 'Courier New', Courier, monospace;
+      border: 2px solid #d9534f;
+      border-radius: 6px;
+    }
+
+    .game-over {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 36px;
+      font-weight: 900;
+      background: rgba(217, 83, 79, 0.9);
+      color: white;
+      padding: 24px 48px;
+      border-radius: 24px;
+      display: none;
+      z-index: 20;
+      text-align: center;
+      box-shadow: 0 0 20px #b83232;
+    }
+  </style>
+</head>
+<body>
+  <!-- code background rain -->
+  <canvas id="codeRain"></canvas>
+
+  <!-- game container -->
+  <div class="game">
+    <div class="character" id="character">
+      <div class="kitty">
+        <div class="face">
+          <div class="ear"></div>
+          <div class="eye"></div>
+          <div class="mouth">
+            <div class="nose"></div>
+            <div class="whisker-1"></div>
+            <div class="whisker-2"></div>
+          </div>
+          <div class="body">
+            <div class="hand">
+              <div class="hand-l"></div>
+              <div class="hand-r"></div>
+            </div>
+          </div>
+          <div class="tail"></div>
+        </div>
+        <div class="laptop">
+          <div class="logo"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="score-box" id="scoreBox">Score: 0</div>
+    <div class="timer-box" id="timerBox">Time: 60</div>
+    <span class="game-title" id="gameTitle">Word Error</span>
+    <div class="pause-btn" onclick="togglePause()">⏸ Pause</div>
+    <button class="exit-btn" onclick="exitGame()">Exit</button>
+    <div class="input-display" id="inputDisplay"></div>
+
+    <div class="game-over" id="gameOverScreen">
+      <div id="gameOverText">Game Over! Final Score: 0</div>
+    </div>
+    <input type="text" id="inputBox" autocomplete="off" autofocus />
+    <audio id="correctSound" src="https://www.soundjay.com/button/beep-07.mp3" preload="auto"></audio>
+    <audio id="endSound" src="https://www.soundjay.com/button/beep-10.mp3" preload="auto"></audio>
+  </div>
+
+  <script>
+        // Get name from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const playerName = urlParams.get('name') || 'Player';
+
+    // Update title to show player's name
+    const gameTitle = document.getElementById('gameTitle');
+    gameTitle.innerText += ` | Hello, ${playerName}!`;
+
+    const easyWords = ["html", "css", "js", "var", "let", "if", "else", "true", "false"];
+    const mediumWords = ["array", "class", "func", "const", "async", "await", "stack", "null"];
+    const hardWords = ["exception", "parameter", "undefined", "constructor", "prototype", "inheritance"];
+    const codingWords = [...easyWords, ...mediumWords, ...hardWords];
+
+
+    let score = 0;
+    let timeLeft = 50;
+    let isPaused = false;
+    let gameInterval, timerInterval;
+    let obstacles = [];
+
+    const game = document.querySelector(".game");
+    const character = document.getElementById("character");
+    const scoreBox = document.getElementById("scoreBox");
+    const timerBox = document.getElementById("timerBox");
+    const inputBox = document.getElementById("inputBox");
+    const inputDisplay = document.getElementById("inputDisplay");
+    const gameOverScreen = document.getElementById("gameOverScreen");
+    const gameOverText = document.getElementById("gameOverText");
+    const correctSound = document.getElementById("correctSound");
+    const endSound = document.getElementById("endSound");
+
+    const obstacleHeights = [180, 230, 280];
+
+    // Function to get a random word from the codingWords array
+    function getWord() {
+      return codingWords[Math.floor(Math.random() * codingWords.length)];
+    }
+
+    function getRandomHeight() {
+      return obstacleHeights[Math.floor(Math.random() * obstacleHeights.length)];
+    }
+
+    // Function to create a new obstacle
+    // with a random word and position
+    function createObstacle() {
+      const word = getWord();
+      const div = document.createElement("div");
+      div.className = "obstacle";
+      div.textContent = word;
+      div.dataset.word = word;
+      div.style.right = "-220px";
+      div.style.bottom = getRandomHeight() + "px";
+      game.appendChild(div);
+      obstacles.push(div);
+    }
+
+    function moveObstacles() {
+      if (isPaused) return;
+      obstacles.forEach((obs, index) => {
+        const currentRight = parseInt(obs.style.right);
+        const speed = 1.5 + Math.min(score * 0.05, 3);
+        obs.style.right = currentRight + speed + "px";
+
+        const obsRect = obs.getBoundingClientRect();
+        const charRect = character.getBoundingClientRect();
+        if (
+          obsRect.left < charRect.right &&
+          obsRect.right > charRect.left &&
+          obsRect.top < charRect.bottom &&
+          obsRect.bottom > charRect.top
+        ) {
+          gameOver();
+        }
+
+        if (currentRight + obs.offsetWidth > window.innerWidth + 100) {
+          game.removeChild(obs);
+          obstacles.splice(index, 1);
+        }
+      });
+    }
+
+    inputBox.addEventListener("input", () => {
+      const input = inputBox.value;
+      inputDisplay.innerHTML = "";
+
+      let match = obstacles.find(o => o.dataset.word.startsWith(input));
+      if (match) {
+        for (let i = 0; i < input.length; i++) {
+          if (input[i] === match.dataset.word[i]) {
+            inputDisplay.innerHTML += `<span style="color:green">${input[i]}</span>`;
+          } else {
+            inputDisplay.innerHTML += `<span style="color:red">${input[i]}</span>`;
+          }
+        }
+      } else {
+        inputDisplay.innerHTML = `<span style="color:red">${input}</span>`;
+      }
+    });
+
+    inputBox.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !isPaused) {
+        const val = inputBox.value.trim();
+        let foundIndex = obstacles.findIndex(obs => obs.dataset.word === val);
+        if (foundIndex !== -1) {
+          correctSound.play();
+          game.removeChild(obstacles[foundIndex]);
+          obstacles.splice(foundIndex, 1);
+          score++;
+          scoreBox.textContent = "Score: " + score;
+        }
+        inputBox.value = "";
+        inputDisplay.textContent = "";
+      }
+    });
+
+    function updateTimer() {
+      if (!isPaused) {
+        timeLeft--;
+        timerBox.textContent = "Time: " + timeLeft;
+        if (timeLeft <= 0) gameOver();
+      }
+    }
+
+    function togglePause() {
+      isPaused = !isPaused;
+      document.querySelector(".pause-btn").textContent = isPaused ? "▶ Resume" : "⏸ Pause";
+    }
+
+    function gameOver() {
+      clearInterval(gameInterval);
+      clearInterval(timerInterval);
+      inputBox.disabled = true;
+      gameOverScreen.style.display = "block";
+      gameOverText.textContent = "Game Over! Final Score: " + score;
+      endSound.play();
+    }
+
+    window.onload = () => {
+      for (let i = 0; i < 5; i++) createObstacle();
+      moveObstacles();
+
+      timerInterval = setInterval(updateTimer, 1000);
+      gameInterval = setInterval(() => {
+        if (!isPaused) {
+          moveObstacles();
+          if (obstacles.length < 5 && Math.random() < 0.03 + score * 0.002) {
+            createObstacle();
+          }
+        }
+      }, 30);
+    };
+
+    // Code Rain Effect
+    const canvas = document.getElementById("codeRain");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const codeChars = "01<>[]{}()=+-/*|&^%!$";
+    const fontSize = 16;
+    const columns = canvas.width / fontSize;
+    const drops = Array.from({ length: columns }).fill(1);
+
+    function drawCodeRain() {
+      ctx.fillStyle = "rgba(200, 230, 255, 0.08)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "#006699";
+      ctx.font = fontSize + "px Courier New";
+
+      for (let i = 0; i < drops.length; i++) {
+        const char = codeChars[Math.floor(Math.random() * codeChars.length)];
+        ctx.fillText(char, i * fontSize, drops[i] * fontSize);
+
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        drops[i]++;
+      }
+
+      requestAnimationFrame(drawCodeRain);
+    }
+    drawCodeRain();
+
+    window.addEventListener("resize", () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+
+     function exitGame() {
+      window.location.href = "../index.html";
+    }
+  </script>
+</body>
+</html>
