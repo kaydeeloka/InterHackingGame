@@ -14,7 +14,7 @@ InterHacking is a hacker-themed typing game we created for Inkeuton, our Interfa
 │   └── kitty.css              # Custom styling for kitty coding in word mode
 </pre>
 
-### Game Modes
+# Game Modes
 
 It features three thrilling game modes that challenge your speed, logic, and developer instincts:
 
